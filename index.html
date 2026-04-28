@@ -115,6 +115,7 @@
   .topbar {
     position: relative;
     z-index: 3;
+    top: -180px; /* matches slideDown start keyframe — prevents FOUC flicker */
     padding: 9px 22px;
     display: flex;
     align-items: center;
@@ -173,6 +174,7 @@
   .nav {
     position: relative;
     z-index: 3;
+    top: -180px; /* matches slideDown start keyframe — prevents FOUC flicker */
     padding: 12px 22px;
     display: flex; align-items: center; gap: 8px;
     background: var(--frost-deep);
@@ -187,10 +189,28 @@
   }
   .nav-logo svg { display: block; }
   .nav-items {
+    position: relative;
     display: flex; align-items: center; gap: 4px;
     flex: 1 1 auto; min-width: 0; overflow: hidden;
   }
+  /* Sliding active-state pill — positioned absolutely, tracks active item via JS.
+     Sits BEHIND items (z-index 0) so the icon/label stay readable on top. */
+  .nav-pill {
+    position: absolute;
+    background: var(--frost-strong);
+    border: 1px solid var(--ink);
+    border-radius: 999px;
+    pointer-events: none;
+    z-index: 0;
+    box-sizing: border-box;
+    transition: left   0.42s cubic-bezier(.5,.1,.2,1),
+                top    0.42s cubic-bezier(.5,.1,.2,1),
+                width  0.42s cubic-bezier(.5,.1,.2,1),
+                height 0.42s cubic-bezier(.5,.1,.2,1);
+  }
   .nav-item {
+    position: relative;
+    z-index: 1;
     display: inline-flex; align-items: center; gap: 5px;
     padding: 7px 11px;
     border-radius: 999px;
@@ -202,15 +222,13 @@
     flex-shrink: 0; min-width: 0;
     text-transform: uppercase;
     letter-spacing: 0.01em;
-    transition: border-color .12s, background .12s, color .12s;
+    transition: color .14s;
   }
-  .nav-item:hover { border-color: var(--hairline-soft); background: rgba(255,255,255,0.35); }
-  .nav-item.active {
-    background: var(--frost-strong);
-    border-color: var(--ink);
-    color: var(--ink);
-    box-shadow: inset 0 0 0 0.5px var(--ink);
-  }
+  .nav-item .lbl { white-space: nowrap; }
+  .nav-item:hover:not(.active) { color: var(--teal); }
+  /* Active state — pill provides bg/border, item itself stays neutral so the
+     pill is visible underneath. */
+  .nav-item.active { color: var(--ink); }
   .nav-item.active svg { color: var(--teal); }
   .nav-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
   .nav-copilot {
@@ -610,7 +628,10 @@
   }
 
   /* ---------- Responsive ---------- */
-  /* Tier 1: full labels collapse — only the active nav item keeps its text */
+  /* Tier 1: full labels collapse — only the active nav item keeps its text.
+     Use display:none (not max-width transition) so layout snaps instantly
+     to the new item's full size. The pill measures correctly in useLayoutEffect
+     and provides the smooth slide+resize visual on its own. */
   @media (max-width: 1050px) {
     .nav-item:not(.active) { padding: 8px; }
     .nav-item:not(.active) .lbl { display: none; }
@@ -876,7 +897,7 @@
 
 <!-- ============== React UI ============== -->
 <script type="text/babel" data-presets="react">
-const { useState } = React;
+const { useState, useRef, useLayoutEffect } = React;
 const noop = (e) => { if (e && e.preventDefault) e.preventDefault(); };
 
 /* ---------- Icon primitive ---------- */
@@ -993,6 +1014,10 @@ function TopBar() {
 /* ---------- Nav ---------- */
 function NavBar() {
   const [active, setActive] = useState("Dashboard");
+  const containerRef = useRef(null);
+  const itemRefs = useRef({});
+  const [pill, setPill] = useState({ left: 0, top: 0, width: 0, height: 0, ready: false });
+
   const items = [
     { name: "Dashboard",                 icon: <Grid /> },
     { name: "Orders",                    icon: <Bag /> },
@@ -1003,14 +1028,47 @@ function NavBar() {
     { name: "3D Preview",                icon: <Cube /> },
     { name: "Account",                   icon: <PersonCircle /> },
   ];
+
+  // Track the active item's bounds so the pill can slide+resize to match.
+  // useLayoutEffect runs after DOM commit but before paint, so the new
+  // rect already reflects the active item's target size (label expanded).
+  useLayoutEffect(() => {
+    const measure = () => {
+      const el = itemRefs.current[active];
+      const c  = containerRef.current;
+      if (!el || !c) return;
+      const er = el.getBoundingClientRect();
+      const cr = c.getBoundingClientRect();
+      setPill({
+        left:   er.left - cr.left,
+        top:    er.top  - cr.top,
+        width:  er.width,
+        height: er.height,
+        ready:  true,
+      });
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [active]);
+
   return (
     <nav className="nav">
       <span className="nav-logo" title="Calyx Command">
         <NavLogo s={44} />
       </span>
-      <div className="nav-items">
+      <div className="nav-items" ref={containerRef}>
+        {pill.ready && (
+          <span className="nav-pill" style={{
+            left:   pill.left  + "px",
+            top:    pill.top   + "px",
+            width:  pill.width + "px",
+            height: pill.height + "px",
+          }} />
+        )}
         {items.map(it => (
           <a key={it.name}
+             ref={(el) => { itemRefs.current[it.name] = el; }}
              className={`nav-item ${active === it.name ? "active" : ""}`}
              href="#"
              onClick={(e) => { e.preventDefault(); setActive(it.name); }}>
