@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Calyx Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@10..48,300;10..48,400;10..48,500;10..48,600;10..48,700&display=swap" rel="stylesheet">
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:           #e8eaee;
+    --bg-deeper:    #d8dce2;
+    --pattern:      rgba(40, 50, 65, 0.10);
+    --ink:          #0a0a0a;
+    --ink-soft:     rgba(10, 10, 10, 0.55);
+    --ink-faint:    rgba(10, 10, 10, 0.32);
+    --teal:         #0d4f5e;
+    --teal-soft:    rgba(13, 79, 94, 0.55);
+    --teal-tint:    rgba(13, 79, 94, 0.10);
+    --frost:        rgba(255, 255, 255, 0.42);
+    --frost-strong: rgba(255, 255, 255, 0.62);
+    --frost-deep:   rgba(245, 247, 250, 0.30);
+    --hairline:     rgba(10, 10, 10, 0.85);
+    --hairline-soft: rgba(10, 10, 10, 0.18);
+    --display: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+    --body:    'Archivo Narrow', ui-sans-serif, system-ui, sans-serif;
+  }
+
+  html, body, #root {
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 14.5px;
+    line-height: 1.45;
+    letter-spacing: 0.01em;
+    -webkit-font-smoothing: antialiased;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  html { background: var(--bg); }
+  body, #root { background: transparent; }
+
+  body { position: relative; min-height: 100vh; }
+
+  /* ---------- Background layers ---------- */
+  #bg-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    background:
+      radial-gradient(120% 80% at 50% 0%, rgba(255,255,255,0.40) 0%, rgba(255,255,255,0) 55%),
+      radial-gradient(80% 60% at 100% 100%, rgba(13,79,94,0.07) 0%, rgba(13,79,94,0) 60%),
+      var(--bg);
+  }
+  #brain-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    animation: brainPulse 38s ease-in-out infinite;
+  }
+  #brain-overlay svg {
+    width: min(78vh, 78vw);
+    height: min(78vh, 78vw);
+    color: rgba(10, 10, 10, 0.42);
+    transform-origin: center;
+    animation: brainDrift 24s ease-in-out infinite alternate;
+  }
+  @keyframes brainPulse {
+    0%, 60% { opacity: 0; }
+    72%     { opacity: 0.18; }
+    82%     { opacity: 0.20; }
+    92%     { opacity: 0; }
+    100%    { opacity: 0; }
+  }
+  @keyframes brainDrift {
+    from { transform: scale(0.96) rotate(-1.5deg); }
+    to   { transform: scale(1.04) rotate(1.5deg); }
+  }
+
+  /* ---------- Typography ---------- */
+  h1, h2, h3, .display { font-family: var(--display); font-weight: 500; letter-spacing: -0.01em; }
+  button, a { font-family: inherit; cursor: pointer; }
+  button { border: none; background: none; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ---------- Frost primitive ---------- */
+  .frost {
+    background: var(--frost);
+    backdrop-filter: blur(14px) saturate(125%);
+    -webkit-backdrop-filter: blur(14px) saturate(125%);
+    border: 1px solid var(--hairline);
+  }
+  .frost-soft {
+    background: var(--frost-deep);
+    backdrop-filter: blur(8px) saturate(115%);
+    -webkit-backdrop-filter: blur(8px) saturate(115%);
+    border: 1px solid var(--hairline-soft);
+  }
+
+  /* ---------- Top bar ---------- */
+  .topbar {
+    position: relative;
+    z-index: 3;
+    padding: 9px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    background: var(--frost-deep);
+    backdrop-filter: blur(10px) saturate(120%);
+    -webkit-backdrop-filter: blur(10px) saturate(120%);
+    border-bottom: 1px solid var(--hairline);
+    font-size: 12.5px;
+    letter-spacing: 0.02em;
+  }
+  .topbar-left, .topbar-right {
+    display: flex; align-items: center; gap: 14px; min-width: 0; flex-wrap: wrap;
+  }
+  .pill-mode {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 4px 12px;
+    border: 1px solid var(--teal);
+    color: var(--teal);
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .topbar-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--ink); white-space: nowrap;
+  }
+  .topbar-link:hover { color: var(--teal); }
+  .topbar-right .topbar-link { color: var(--teal); }
+  .topbar-search {
+    display: inline-flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 5px 12px;
+    border: 1px solid var(--hairline);
+    border-radius: 999px;
+    background: var(--frost);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    width: 230px; height: 30px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    font-size: 12.5px;
+    transition: border-color .15s;
+  }
+  .topbar-search:hover { border-color: var(--teal); color: var(--teal); }
+  .topbar-search > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .viewing-label {
+    font-weight: 500; color: var(--ink-soft);
+    text-transform: uppercase; letter-spacing: 0.14em; font-size: 10.5px;
+  }
+
+  /* ---------- Nav ---------- */
+  .nav {
+    position: relative;
+    z-index: 3;
+    padding: 12px 22px;
+    display: flex; align-items: center; gap: 8px;
+    background: var(--frost-deep);
+    backdrop-filter: blur(10px) saturate(120%);
+    -webkit-backdrop-filter: blur(10px) saturate(120%);
+    border-bottom: 1px solid var(--hairline);
+  }
+  .nav-logo {
+    display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+    margin-right: 10px; flex-shrink: 0; line-height: 1; gap: 2px;
+  }
+  .nav-logo svg { display: block; color: var(--teal); }
+  .nav-logo .brand {
+    font-family: var(--display);
+    font-size: 5px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    color: var(--ink);
+    text-transform: uppercase;
+    text-align: center;
+    line-height: 1.15;
+  }
+  .nav-items {
+    display: flex; align-items: center; gap: 4px;
+    flex: 1 1 auto; min-width: 0; overflow: hidden;
+  }
+  .nav-item {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 7px 11px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink);
+    white-space: nowrap;
+    flex-shrink: 0; min-width: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    transition: border-color .12s, background .12s, color .12s;
+  }
+  .nav-item:hover { border-color: var(--hairline-soft); background: rgba(255,255,255,0.35); }
+  .nav-item.active {
+    background: var(--frost-strong);
+    border-color: var(--ink);
+    color: var(--ink);
+    box-shadow: inset 0 0 0 0.5px var(--ink);
+  }
+  .nav-item.active svg { color: var(--teal); }
+  .nav-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .nav-copilot {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 12px;
+    border: 1px solid var(--teal);
+    color: var(--teal);
+    border-radius: 999px;
+    font-size: 12.5px; font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    background: var(--frost);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  .nav-copilot:hover { background: var(--teal-tint); }
+  .nav-bell {
+    width: 34px; height: 34px;
+    border: 1px solid var(--hairline);
+    border-radius: 999px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--frost);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    color: var(--ink);
+    flex-shrink: 0;
+  }
+  .nav-bell:hover { border-color: var(--teal); color: var(--teal); }
+
+  /* ---------- Main layout ---------- */
+  .main {
+    position: relative; z-index: 3;
+    padding: 22px 22px 32px;
+    max-width: 1420px; margin: 0 auto; width: 100%;
+  }
+
+  .welcome-row {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    margin-bottom: 18px; gap: 18px; flex-wrap: wrap;
+  }
+  .welcome-row h1 {
+    font-size: 38px;
+    font-weight: 500;
+    letter-spacing: -0.025em;
+    line-height: 1;
+  }
+  .welcome-row h1 .accent {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--teal);
+    margin-left: 4px;
+  }
+  .welcome-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    padding: 9px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    display: inline-flex; align-items: center; gap: 8px;
+    white-space: nowrap;
+    border: 1px solid var(--ink);
+    color: var(--ink);
+    background: var(--frost);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transition: background .14s, color .14s, border-color .14s;
+  }
+  .btn:hover { background: var(--frost-strong); }
+  .btn-teal { border-color: var(--teal); color: var(--teal); }
+  .btn-teal:hover { background: var(--teal-tint); }
+  .btn-ghost { border-color: var(--hairline-soft); color: var(--ink); }
+  .btn-ghost:hover { border-color: var(--ink); }
+  .btn-sm { padding: 5px 12px; font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; }
+
+  /* ---------- Stats ---------- */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .stat {
+    padding: 16px 18px;
+    border-radius: 14px;
+    background: var(--frost);
+    backdrop-filter: blur(12px) saturate(125%);
+    -webkit-backdrop-filter: blur(12px) saturate(125%);
+    border: 1px solid var(--hairline);
+    position: relative;
+  }
+  .stat::after {
+    content: "";
+    position: absolute; inset: 3px;
+    border: 1px solid rgba(10,10,10,0.06);
+    border-radius: 11px;
+    pointer-events: none;
+  }
+  .stat-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px; gap: 6px;
+  }
+  .stat-label {
+    font-family: var(--body);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--ink-soft);
+  }
+  .stat-icon { color: var(--teal); display: inline-flex; }
+  .stat-value {
+    font-family: var(--display);
+    font-size: 32px;
+    font-weight: 500;
+    line-height: 1;
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+  .stat-value.dim { color: var(--ink-faint); font-weight: 400; }
+  .stat-sub {
+    font-size: 12px;
+    color: var(--ink-soft);
+    text-transform: lowercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* ---------- Two columns ---------- */
+  .columns {
+    display: flex; gap: 14px; align-items: flex-start;
+    margin-bottom: 14px;
+  }
+  .col-left  { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+  .col-right { flex: 0 1 380px; min-width: 0; max-width: 380px; display: flex; flex-direction: column; gap: 14px; }
+
+  /* ---------- Card ---------- */
+  .card {
+    padding: 18px 20px;
+    border-radius: 16px;
+    background: var(--frost);
+    backdrop-filter: blur(14px) saturate(125%);
+    -webkit-backdrop-filter: blur(14px) saturate(125%);
+    border: 1px solid var(--hairline);
+    position: relative;
+  }
+  .card::after {
+    content: "";
+    position: absolute; inset: 4px;
+    border: 1px solid rgba(10,10,10,0.05);
+    border-radius: 13px;
+    pointer-events: none;
+  }
+  .card-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px; gap: 8px; flex-wrap: wrap;
+  }
+  .card-title {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-family: var(--display);
+    font-size: 17px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  .card-title .ic { display: inline-flex; color: var(--teal); }
+  .card-sub {
+    font-size: 11px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+  }
+
+  /* ---------- Tabs ---------- */
+  .tabs { display: inline-flex; gap: 0; border: 1px solid var(--hairline-soft); border-radius: 999px; padding: 2px; background: var(--frost); }
+  .tab {
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: color .12s, border-color .12s, background .12s;
+    border: 1px solid transparent;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab.active {
+    color: var(--teal);
+    border-color: var(--teal);
+    background: var(--frost-strong);
+  }
+
+  /* ---------- Empty states ---------- */
+  .empty {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 28px 12px 20px; text-align: center;
+  }
+  .empty-icon {
+    width: 56px; height: 56px;
+    border-radius: 999px;
+    border: 1px solid var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 14px;
+    color: var(--teal);
+    background: var(--frost-strong);
+  }
+  .empty-icon.muted { color: var(--ink-soft); border-color: var(--hairline-soft); }
+  .empty-title {
+    font-family: var(--display);
+    font-size: 17px; font-weight: 500;
+    margin-bottom: 6px;
+    letter-spacing: -0.01em;
+  }
+  .empty-sub {
+    font-size: 12.5px; color: var(--ink-soft);
+    margin-bottom: 14px; max-width: 340px; line-height: 1.5;
+  }
+  .empty-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+
+  /* ---------- Calendar ---------- */
+  .cal-head {
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    padding: 6px 0 10px;
+  }
+  .cal-month {
+    font-family: var(--display);
+    font-size: 14px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.18em;
+  }
+  .cal-nav {
+    width: 26px; height: 26px;
+    border: 1px solid var(--hairline-soft);
+    border-radius: 999px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--ink); cursor: pointer;
+  }
+  .cal-nav:hover { border-color: var(--teal); color: var(--teal); }
+  .cal-grid {
+    display: grid; grid-template-columns: repeat(7, minmax(0, 1fr));
+    row-gap: 3px;
+  }
+  .cal-dow {
+    text-align: center;
+    font-size: 9.5px; font-weight: 600;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    padding: 4px 0 6px;
+  }
+  .cal-day {
+    aspect-ratio: 1 / 1;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding-top: 7px;
+    font-size: 12.5px;
+    color: var(--ink);
+    cursor: pointer;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    transition: border-color .12s, color .12s, background .12s;
+  }
+  .cal-day.muted { color: var(--ink-faint); cursor: default; }
+  .cal-day:hover:not(.muted):not(.selected) { border-color: var(--hairline-soft); }
+  .cal-day.selected {
+    border-color: var(--teal);
+    color: var(--teal);
+    background: var(--teal-tint);
+    font-weight: 600;
+  }
+  .cal-legend {
+    display: flex; flex-wrap: wrap; gap: 8px 12px;
+    padding-top: 14px; margin-top: 8px;
+    border-top: 1px solid var(--hairline-soft);
+    font-size: 10px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .cal-legend .item { display: inline-flex; align-items: center; gap: 5px; }
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 999px;
+    display: inline-block;
+    border: 1px solid var(--ink);
+  }
+  .dot.win       { background: transparent; border-color: var(--teal); }
+  .dot.delay     { background: transparent; border-color: var(--ink); border-style: dashed; }
+  .dot.delivered { background: var(--teal); border-color: var(--teal); }
+  .dot.notrack   { background: transparent; border-color: var(--ink-faint); }
+
+  /* ---------- Bottom chips ---------- */
+  .bottom-row { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 8px 14px;
+    border: 1px solid var(--hairline);
+    border-radius: 999px;
+    font-size: 12px;
+    color: var(--ink);
+    background: var(--frost);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: border-color .14s, color .14s;
+  }
+  .chip:hover { border-color: var(--teal); color: var(--teal); }
+  .chip.dashed { border-style: dashed; color: var(--ink-soft); }
+
+  /* ---------- Responsive ---------- */
+  /* Tier 1: full labels collapse — only the active nav item keeps its text */
+  @media (max-width: 1050px) {
+    .nav-item:not(.active) { padding: 8px; }
+    .nav-item:not(.active) .lbl { display: none; }
+    .nav-copilot .lbl { display: none; }
+    .nav-copilot { padding: 8px; }
+  }
+  /* Tier 2: even the active label collapses — icons only */
+  @media (max-width: 640px) {
+    .nav-item.active { padding: 8px; }
+    .nav-item.active .lbl { display: none; }
+  }
+  @media (max-width: 900px) {
+    .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .columns { flex-direction: column; align-items: stretch; }
+    .col-left, .col-right { width: 100%; max-width: 100%; flex: 1 1 auto; }
+  }
+  @media (max-width: 820px) {
+    .topbar-link.email-link { display: none; }
+    .topbar-search { width: 180px; }
+  }
+  @media (max-width: 640px) {
+    .topbar { padding: 8px 14px; }
+    .topbar-link.switch-link, .viewing-label { display: none; }
+    .topbar-search { flex: 1 1 140px; min-width: 0; }
+    .welcome-row h1 { font-size: 30px; }
+  }
+  @media (max-width: 600px) {
+    .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .welcome-row { flex-direction: column; align-items: flex-start; }
+    .main { padding: 16px 14px 24px; }
+    .nav { padding: 10px 14px; }
+  }
+  @media (max-width: 420px) {
+    .topbar-link.report-bug .lbl,
+    .pill-mode .lbl { display: none; }
+    .pill-mode { padding: 4px 8px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+
+<div id="brain-overlay">
+  <svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="0.45" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M2 18 H8.5"/>
+    <path d="M6.5 16 L8.5 18 L6.5 20"/>
+    <path d="M27.5 18 H34"/>
+    <path d="M32 16 L34 18 L32 20"/>
+    <path d="M18 9 c-2.2 0-4 1.5-4.4 3.4 c-1.5 0.2-2.6 1.5-2.6 2.9 c0 0.8 0.4 1.6 1 2.1 c-0.6 0.5-1 1.3-1 2.1 c0 1.4 1.1 2.7 2.6 2.9 c0.4 1.9 2.2 3.2 4.4 3.2"/>
+    <path d="M18 9 c2.2 0 4 1.5 4.4 3.4 c1.5 0.2 2.6 1.5 2.6 2.9 c0 0.8-0.4 1.6-1 2.1 c0.6 0.5 1 1.3 1 2.1 c0 1.4-1.1 2.7-2.6 2.9 c-0.4 1.9-2.2 3.2-4.4 3.2"/>
+    <path d="M18 9 V25.5"/>
+    <path d="M14 13 c0.8 0.7 0.8 1.7 0 2.4"/>
+    <path d="M14 18 c0.8 0.7 0.8 1.7 0 2.4"/>
+    <path d="M22 13 c-0.8 0.7-0.8 1.7 0 2.4"/>
+    <path d="M22 18 c-0.8 0.7-0.8 1.7 0 2.4"/>
+  </svg>
+</div>
+
+<div id="root"></div>
+
+<!-- ============== Animated background ============== -->
+<script>
+(function () {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  let w = 0, h = 0;
+
+  // Dimmer than before — barely-there strokes
+  const stroke      = 'rgba(40, 50, 65, 0.13)';
+  const strokeMid   = 'rgba(13, 79, 94, 0.16)';
+  const strokeBold  = 'rgba(40, 50, 65, 0.18)';
+
+  function resize() {
+    w = window.innerWidth;
+    h = window.innerHeight;
+    canvas.width  = Math.floor(w * dpr);
+    canvas.height = Math.floor(h * dpr);
+    canvas.style.width  = w + 'px';
+    canvas.style.height = h + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener('resize', resize, { passive: true });
+  resize();
+
+  // Single kaleidoscopic organism:
+  //   - 24 radial spokes anchor the symmetry
+  //   - concentric morphing rings breathe in/out, each with multiple harmonics
+  //   - diamond lattice between rings creates the cross-cutting kaleidoscope shapes
+  // Everything shares the same time variable so the whole field moves as one.
+  let start = performance.now();
+  function frame(now) {
+    const t = (now - start) / 1000;
+    ctx.clearRect(0, 0, w, h);
+
+    const cx = w / 2;
+    const cy = h / 2;
+    const maxR = Math.hypot(w, h) * 0.62;
+    const sectors = 24;          // kaleidoscope fold count
+    const baseStep = 64;         // ring spacing
+    const ringCount = Math.ceil(maxR / baseStep) + 1;
+    const slowSpin = t * 0.018;  // very slow rotation of the whole organism
+
+    ctx.lineWidth = 1;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // Radial spokes — establish the kaleidoscope symmetry
+    ctx.strokeStyle = stroke;
+    for (let s = 0; s < sectors; s++) {
+      const a = (s / sectors) * Math.PI * 2 + slowSpin;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * baseStep * 0.4, cy + Math.sin(a) * baseStep * 0.4);
+      ctx.lineTo(cx + Math.cos(a) * maxR, cy + Math.sin(a) * maxR);
+      ctx.stroke();
+    }
+
+    // Concentric breathing rings — the organism
+    for (let k = 1; k <= ringCount; k++) {
+      const baseR = k * baseStep;
+      ctx.strokeStyle = (k % 5 === 0) ? strokeMid : stroke;
+      ctx.beginPath();
+      const segs = sectors * 8;
+      for (let i = 0; i <= segs; i++) {
+        const a = (i / segs) * Math.PI * 2 + slowSpin;
+        // Layered harmonics keep the silhouette flowing without ever repeating exactly
+        const w1 = Math.sin(a * sectors / 2 + t * 0.42 + k * 0.31) * 9;
+        const w2 = Math.cos(a * sectors / 4 - t * 0.55 + k * 0.47) * 5;
+        const w3 = Math.sin(a * sectors / 8 + t * 0.22 - k * 0.18) * 7;
+        const breath = Math.sin(t * 0.18 + k * 0.22) * 4;
+        const r = baseR + w1 + w2 + w3 + breath;
+        const x = cx + Math.cos(a) * r;
+        const y = cy + Math.sin(a) * r;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.stroke();
+    }
+
+    // Diamond lattice — connects ring N to ring N+1 with crossing chords
+    ctx.strokeStyle = stroke;
+    for (let k = 1; k < ringCount; k++) {
+      const r1 = k * baseStep;
+      const r2 = (k + 1) * baseStep;
+      if (r2 > maxR) continue;
+      const offset = (k % 2 === 0) ? 0 : Math.PI / sectors;
+      const wobble = Math.sin(t * 0.3 + k) * 0.03;
+      ctx.beginPath();
+      for (let s = 0; s < sectors; s++) {
+        const a1 = (s / sectors) * Math.PI * 2 + offset + slowSpin + wobble;
+        const a2 = ((s + 0.5) / sectors) * Math.PI * 2 + offset + slowSpin - wobble;
+        const a3 = ((s - 0.5) / sectors) * Math.PI * 2 + offset + slowSpin - wobble;
+        const x1 = cx + Math.cos(a1) * r1;
+        const y1 = cy + Math.sin(a1) * r1;
+        const x2 = cx + Math.cos(a2) * r2;
+        const y2 = cy + Math.sin(a2) * r2;
+        const x3 = cx + Math.cos(a3) * r2;
+        const y3 = cy + Math.sin(a3) * r2;
+        ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+        ctx.moveTo(x1, y1); ctx.lineTo(x3, y3);
+      }
+      ctx.stroke();
+    }
+
+    // A single soft accent ring that wanders through the organism — adds depth
+    const accentK = 4 + Math.sin(t * 0.08) * 2.5;
+    const accentR = accentK * baseStep;
+    ctx.strokeStyle = strokeBold;
+    ctx.beginPath();
+    const aSegs = sectors * 8;
+    for (let i = 0; i <= aSegs; i++) {
+      const a = (i / aSegs) * Math.PI * 2 + slowSpin;
+      const wob = Math.sin(a * sectors / 2 + t * 0.6) * 11
+                + Math.cos(a * sectors / 3 - t * 0.4) * 6;
+      const r = accentR + wob;
+      const x = cx + Math.cos(a) * r;
+      const y = cy + Math.sin(a) * r;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.stroke();
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+
+<!-- ============== React UI ============== -->
+<script type="text/babel" data-presets="react">
+const { useState } = React;
+const noop = (e) => { if (e && e.preventDefault) e.preventDefault(); };
+
+/* ---------- Icon primitive ---------- */
+const Icon = ({ children, size = 14, strokeWidth = 1.6, fill = "none" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor"
+       strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    {children}
+  </svg>
+);
+
+const Eye        = ({ s = 13 }) => <Icon size={s}><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></Icon>;
+const User       = ({ s = 14 }) => <Icon size={s}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="8" r="4"/></Icon>;
+const Bug        = ({ s = 14 }) => <Icon size={s}><rect x="6" y="6" width="12" height="13" rx="6"/><path d="M12 19v-9"/><path d="M3 9c0 1.6 1.4 3 3 3"/><path d="M21 9c0 1.6-1.4 3-3 3"/><path d="M3 18c0-1.6 1.4-3 3-3"/><path d="M21 18c0-1.6-1.4-3-3-3"/></Icon>;
+const ChevUD     = ({ s = 13 }) => <Icon size={s}><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></Icon>;
+const Grid       = ({ s = 13 }) => <Icon size={s}><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="14" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/></Icon>;
+const Bag        = ({ s = 13 }) => <Icon size={s}><path d="M5 8h14l-1 12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></Icon>;
+const Box        = ({ s = 13, sw = 1.6 }) => <Icon size={s} strokeWidth={sw}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05"/><path d="M12 22.08V12"/></Icon>;
+const FilePlus   = ({ s = 13 }) => <Icon size={s}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 11v6"/><path d="M9 14h6"/></Icon>;
+const Palette    = ({ s = 14 }) => <Icon size={s}><path d="M12 22a10 10 0 1 1 0-20 10 10 0 0 1 10 10 5 5 0 0 1-5 5h-1.7c-.7 0-1.3.6-1.3 1.3 0 .3.1.6.3.8.5.6.4 1.5-.3 1.9z"/><circle cx="7.5" cy="11.5" r=".7"/><circle cx="10.5" cy="7.5" r=".7"/><circle cx="14.5" cy="7" r=".7"/><circle cx="17.5" cy="11" r=".7"/></Icon>;
+const Shield     = ({ s = 13 }) => <Icon size={s}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></Icon>;
+const Cube       = ({ s = 13 }) => <Icon size={s}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05"/><path d="M12 22.08V12"/></Icon>;
+const PersonCircle = ({ s = 13 }) => <Icon size={s}><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/><circle cx="12" cy="12" r="10"/></Icon>;
+const Bell       = ({ s = 16 }) => <Icon size={s}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></Icon>;
+const Cart       = ({ s = 14 }) => <Icon size={s}><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h2.5l2.5 12.5a1.5 1.5 0 0 0 1.5 1.2h9a1.5 1.5 0 0 0 1.5-1.2L21 7H6"/></Icon>;
+const Sparkle    = ({ s = 13 }) => <Icon size={s}><path d="M12 3v3"/><path d="M12 18v3"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M5.6 5.6l2.1 2.1"/><path d="M16.3 16.3l2.1 2.1"/><path d="M5.6 18.4l2.1-2.1"/><path d="M16.3 7.7l2.1-2.1"/></Icon>;
+const Truck      = ({ s = 16 }) => <Icon size={s}><path d="M2 7a1 1 0 0 1 1-1h10v11H4a1 1 0 0 1-1-1z" /><path d="M13 9h4l4 4v3a1 1 0 0 1-1 1h-3"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/><path d="M9 18h6"/></Icon>;
+const Check      = ({ s = 22 }) => <Icon size={s} strokeWidth={1.8}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></Icon>;
+const Stars      = ({ s = 16 }) => <Icon size={s} strokeWidth={1.4}><path d="M11 2.5 13 8.4 19 10 13 11.6 11 17.5 9 11.6 3 10 9 8.4Z"/><path d="M18 13.5 18.7 15.4 20.6 16 18.7 16.6 18 18.5 17.3 16.6 15.4 16 17.3 15.4Z"/></Icon>;
+const ChevL      = ({ s = 13 }) => <Icon size={s}><polyline points="15 18 9 12 15 6"/></Icon>;
+const ChevR      = ({ s = 13 }) => <Icon size={s}><polyline points="9 18 15 12 9 6"/></Icon>;
+const ChevD      = ({ s = 11 }) => <Icon size={s}><polyline points="6 9 12 15 18 9"/></Icon>;
+const TrendUp    = ({ s = 14 }) => <Icon size={s}><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></Icon>;
+const Clipboard  = ({ s = 14 }) => <Icon size={s}><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h4"/></Icon>;
+const Calendar   = ({ s = 14 }) => <Icon size={s}><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="16" y1="3" x2="16" y2="7"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="3" y1="10" x2="21" y2="10"/></Icon>;
+const Gauge      = ({ s = 14 }) => <Icon size={s}><circle cx="12" cy="12" r="10"/><path d="M12 12 16 8"/><path d="M12 12v-4"/></Icon>;
+const Doc        = ({ s = 16 }) => <Icon size={s}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></Icon>;
+const Flask      = ({ s = 13 }) => <Icon size={s}><path d="M9 2v6L4.5 18a2.5 2.5 0 0 0 2.2 3.5h10.6a2.5 2.5 0 0 0 2.2-3.5L15 8V2"/><line x1="9" y1="2" x2="15" y2="2"/><path d="M6.5 14h11"/></Icon>;
+const Drop       = ({ s = 13 }) => <Icon size={s}><path d="M12 2.5c-3 4-6 7-6 11a6 6 0 0 0 12 0c0-4-3-7-6-11z"/><path d="M9 14a3 3 0 0 0 3 3"/></Icon>;
+const BugLine    = ({ s = 13 }) => <Icon size={s}><rect x="6" y="7" width="12" height="11" rx="6"/><path d="M12 18v-9"/><path d="M5 9c0 1.4 1.2 2.6 2.6 2.7"/><path d="M19 9c0 1.4-1.2 2.6-2.6 2.7"/><path d="M5 17c0-1.4 1.2-2.6 2.6-2.7"/><path d="M19 17c0-1.4-1.2-2.6-2.6-2.7"/></Icon>;
+const TruckTiny  = ({ s = 11 }) => <Icon size={s}><path d="M2 7h10v9H4z"/><path d="M12 10h4l4 4v2h-3"/><circle cx="7" cy="17" r="1.5"/><circle cx="17" cy="17" r="1.5"/></Icon>;
+const BellTiny   = ({ s = 11 }) => <Icon size={s}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></Icon>;
+
+const BrainLogo = ({ s = 24 }) => (
+  <svg width={s} height={s} viewBox="0 0 36 36" fill="none" stroke="currentColor"
+       strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 18 H8.5"/>
+    <path d="M6.5 16 L8.5 18 L6.5 20"/>
+    <path d="M27.5 18 H34"/>
+    <path d="M32 16 L34 18 L32 20"/>
+    <path d="M18 9 c-2.2 0-4 1.5-4.4 3.4 c-1.5 0.2-2.6 1.5-2.6 2.9 c0 0.8 0.4 1.6 1 2.1 c-0.6 0.5-1 1.3-1 2.1 c0 1.4 1.1 2.7 2.6 2.9 c0.4 1.9 2.2 3.2 4.4 3.2"/>
+    <path d="M18 9 c2.2 0 4 1.5 4.4 3.4 c1.5 0.2 2.6 1.5 2.6 2.9 c0 0.8-0.4 1.6-1 2.1 c0.6 0.5 1 1.3 1 2.1 c0 1.4-1.1 2.7-2.6 2.9 c-0.4 1.9-2.2 3.2-4.4 3.2"/>
+    <path d="M18 9 V25.5"/>
+    <path d="M14 13 c0.8 0.7 0.8 1.7 0 2.4"/>
+    <path d="M14 18 c0.8 0.7 0.8 1.7 0 2.4"/>
+    <path d="M22 13 c-0.8 0.7-0.8 1.7 0 2.4"/>
+    <path d="M22 18 c-0.8 0.7-0.8 1.7 0 2.4"/>
+  </svg>
+);
+
+/* ---------- Top bar ---------- */
+function TopBar() {
+  return (
+    <div className="topbar">
+      <div className="topbar-left">
+        <span className="pill-mode" onClick={noop}><Eye /> <span className="lbl">CS Mode</span></span>
+        <a className="topbar-link switch-link" href="#" onClick={noop}>Switch to Manufacturer</a>
+        <a className="topbar-link email-link" href="#" onClick={noop}><User s={13} /> dev-admin@calyx.local</a>
+      </div>
+      <div className="topbar-right">
+        <a className="topbar-link report-bug" href="#" onClick={noop}><Bug s={13} /> <span className="lbl">Report Bug</span></a>
+        <span className="viewing-label">Viewing as</span>
+        <div className="topbar-search" onClick={noop}>
+          <span>Search customers…</span>
+          <ChevUD />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Nav ---------- */
+function NavBar() {
+  const [active, setActive] = useState("Dashboard");
+  const items = [
+    { name: "Dashboard",                 icon: <Grid /> },
+    { name: "Orders",                    icon: <Bag /> },
+    { name: "Products",                  icon: <Box /> },
+    { name: "Request Quote",             icon: <FilePlus /> },
+    { name: "Artwork Intelligence Hub",  icon: <Palette s={13} /> },
+    { name: "Approvals",                 icon: <Shield /> },
+    { name: "3D Preview",                icon: <Cube /> },
+    { name: "Account",                   icon: <PersonCircle /> },
+  ];
+  return (
+    <nav className="nav">
+      <span className="nav-logo" title="Calyx Command">
+        <BrainLogo s={26} />
+        <span className="brand">CALYX<br/>COMMAND</span>
+      </span>
+      <div className="nav-items">
+        {items.map(it => (
+          <a key={it.name}
+             className={`nav-item ${active === it.name ? "active" : ""}`}
+             href="#"
+             onClick={(e) => { e.preventDefault(); setActive(it.name); }}>
+            {it.icon}<span className="lbl">{it.name}</span>
+          </a>
+        ))}
+      </div>
+      <div className="nav-right">
+        <a className="nav-copilot" href="#" onClick={noop}>
+          <Sparkle s={12} /><span className="lbl">Copilot</span>
+        </a>
+        <button className="nav-bell" onClick={noop} title="Notifications"><Bell /></button>
+      </div>
+    </nav>
+  );
+}
+
+/* ---------- Welcome ---------- */
+function WelcomeRow() {
+  return (
+    <div className="welcome-row">
+      <h1>Welcome<span className="accent">.</span></h1>
+      <div className="welcome-actions">
+        <button className="btn" onClick={noop}><Cart /> Place Order</button>
+        <button className="btn btn-teal" onClick={noop}><Sparkle /> Explore Packaging</button>
+        <button className="btn btn-ghost" onClick={noop}><Palette /> Submit Artwork</button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Stats ---------- */
+function StatCard({ label, value, sub, icon, dim }) {
+  return (
+    <div className="stat">
+      <div className="stat-head">
+        <span className="stat-label">{label}</span>
+        <span className="stat-icon">{icon}</span>
+      </div>
+      <div className={`stat-value ${dim ? "dim" : ""}`}>{value}</div>
+      <div className="stat-sub">{sub}</div>
+    </div>
+  );
+}
+function StatsRow() {
+  return (
+    <div className="stats">
+      <StatCard label="Open Orders"       value="0"  sub="all clear"          icon={<Box s={15} />} />
+      <StatCard label="In Production"     value="0"  sub="press is quiet"     icon={<TrendUp s={15} />} />
+      <StatCard label="Awaiting Approval" value="0"  sub="nothing pending"    icon={<Clipboard s={15} />} />
+      <StatCard label="Spend MTD"         value="$0" sub="from recent orders" icon={<Calendar s={15} />} />
+      <StatCard label="On-Time %"         value="—"  sub="coming soon"        icon={<Gauge s={15} />} dim />
+    </div>
+  );
+}
+
+/* ---------- Needs attention ---------- */
+function NeedsAttention() {
+  const [tab, setTab] = useState("All");
+  const tabs = ["All", "Approvals", "Production", "Logistics"];
+  return (
+    <div className="card">
+      <div className="card-head">
+        <div>
+          <div className="card-title"><span className="ic"><Stars /></span> Needs your attention</div>
+          <div className="card-sub" style={{ marginTop: 4 }}>Updated 10:55 AM</div>
+        </div>
+        <div className="tabs">
+          {tabs.map(t => (
+            <span key={t}
+                  className={`tab ${tab === t ? "active" : ""}`}
+                  onClick={() => setTab(t)}>{t}</span>
+          ))}
+        </div>
+      </div>
+      <div className="empty">
+        <div className="empty-icon"><Check /></div>
+        <div className="empty-title">You're all caught up</div>
+        <div className="empty-sub">Nothing needs your attention right now. Here's what's next on the calendar.</div>
+        <div className="empty-actions">
+          <button className="btn btn-ghost" onClick={noop}>View all orders</button>
+          <button className="btn" onClick={noop}>Place an order</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Calendar ---------- */
+function CalendarCard() {
+  // April 2026 — Wed start, 30 days
+  const offset = 3, days = 30, today = 28;
+  const [selected, setSelected] = useState(today);
+  const cells = [];
+  for (let i = 0; i < offset; i++) cells.push({ blank: true, key: `b${i}` });
+  for (let d = 1; d <= days; d++) cells.push({ day: d, key: `d${d}` });
+  while (cells.length % 7 !== 0) cells.push({ blank: true, key: `e${cells.length}` });
+
+  return (
+    <div className="card">
+      <div className="card-title" style={{ marginBottom: 6 }}>
+        <span className="ic"><Truck /></span>
+        Shipping &amp; Deliveries
+      </div>
+      <div className="cal-head">
+        <span className="cal-nav" onClick={noop}><ChevL /></span>
+        <span className="cal-month">April 2026</span>
+        <span className="cal-nav" onClick={noop}><ChevR /></span>
+      </div>
+      <div className="cal-grid">
+        {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d =>
+          <div key={d} className="cal-dow">{d}</div>)}
+        {cells.map(c => {
+          if (c.blank) return <div key={c.key} className="cal-day muted" />;
+          const isSelected = c.day === selected;
+          return (
+            <div key={c.key}
+                 className={`cal-day${isSelected ? " selected" : ""}`}
+                 onClick={() => setSelected(s => s === c.day ? null : c.day)}>
+              {c.day}
+            </div>
+          );
+        })}
+      </div>
+      <div className="cal-legend">
+        <span className="item"><TruckTiny /> Ships</span>
+        <span className="item"><span className="dot win"/> Delivery Window</span>
+        <span className="item"><span className="dot delay"/> Delayed</span>
+        <span className="item"><span className="dot delivered"/> Delivered</span>
+        <span className="item"><span className="dot notrack"/> No Tracking</span>
+        <span className="item"><BellTiny /> Subsc…</span>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Active orders ---------- */
+function ActiveOrders() {
+  return (
+    <div className="card">
+      <div className="card-head">
+        <div className="card-title"><span className="ic"><Box s={16} /></span> Active orders</div>
+        <button className="btn btn-ghost btn-sm" onClick={noop}>View all</button>
+      </div>
+      <div className="empty">
+        <div className="empty-icon"><Box s={22} sw={1.6} /></div>
+        <div className="empty-title">No active orders right now.</div>
+        <div className="empty-sub">Start one to see it move through the line.</div>
+        <button className="btn" onClick={noop}>Place an order.</button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Quotes ---------- */
+function Quotes() {
+  return (
+    <div className="card">
+      <div className="card-head">
+        <div className="card-title"><span className="ic" style={{ color: "var(--ink-soft)" }}><Doc /></span> Quotes</div>
+        <button className="btn btn-ghost btn-sm" onClick={noop}>View All</button>
+      </div>
+      <div className="empty">
+        <div className="empty-icon muted"><Doc s={20} /></div>
+        <div className="empty-title" style={{ color: "var(--ink-soft)", fontWeight: 400 }}>No quotes in progress</div>
+        <button className="btn btn-ghost" onClick={noop}>Request a Quote</button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Bottom chips ---------- */
+function BottomChips() {
+  return (
+    <div className="bottom-row">
+      <button className="chip dashed" onClick={noop}><BugLine /> Deliveries Debug <ChevD /></button>
+      <button className="chip" onClick={noop}><Flask /> Explore Your Industry</button>
+      <button className="chip" onClick={noop}><Drop /> Spend Leak Map</button>
+    </div>
+  );
+}
+
+/* ---------- App ---------- */
+function App() {
+  return (
+    <>
+      <TopBar />
+      <NavBar />
+      <main className="main">
+        <WelcomeRow />
+        <StatsRow />
+        <div className="columns">
+          <div className="col-left">
+            <NeedsAttention />
+            <ActiveOrders />
+          </div>
+          <div className="col-right">
+            <CalendarCard />
+            <Quotes />
+          </div>
+        </div>
+        <BottomChips />
+      </main>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
