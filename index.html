@@ -181,20 +181,11 @@
     border-bottom: 1px solid var(--hairline);
   }
   .nav-logo {
-    display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
-    margin-right: 10px; flex-shrink: 0; line-height: 1; gap: 2px;
-  }
-  .nav-logo svg { display: block; color: var(--teal); }
-  .nav-logo .brand {
-    font-family: var(--display);
-    font-size: 5px;
-    font-weight: 600;
-    letter-spacing: 0.4px;
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-right: 10px; flex-shrink: 0; line-height: 1;
     color: var(--ink);
-    text-transform: uppercase;
-    text-align: center;
-    line-height: 1.15;
   }
+  .nav-logo svg { display: block; }
   .nav-items {
     display: flex; align-items: center; gap: 4px;
     flex: 1 1 auto; min-width: 0; overflow: hidden;
@@ -530,11 +521,8 @@
   .chip.dashed { border-style: dashed; color: var(--ink-soft); }
 
   /* ---------- Loading screen ---------- */
-  /* Timeline:
-       0.0  – 1.4s : brain pulses (centered, large)
-       1.4  – 1.9s : CALYX COMMAND wordmark fades in below
-       1.9  – 2.3s : composite holds
-       2.3  – 3.0s : loader fades out, content slides in (staggered) */
+  /* Animated brain logo, sized small in the center, tinted to match the
+     kaleidoscope strokes so it reads as part of the pattern. */
   #loader {
     position: fixed;
     inset: 0;
@@ -543,78 +531,80 @@
     align-items: center;
     justify-content: center;
     pointer-events: auto;
-    background: rgba(232, 234, 238, 0.55);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
+    background: transparent;
     animation: loaderOut 0.7s ease 2.3s forwards;
   }
-  .loader-stage {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 28px;
-  }
-  .loader-brain {
-    width: clamp(140px, 18vw, 200px);
-    height: clamp(140px, 18vw, 200px);
-    color: var(--ink);
-    transform-origin: center;
-    animation: brainBeat 1.4s ease-in-out 0s 1;
-  }
-  .loader-wordmark {
-    font-family: var(--display);
-    font-weight: 500;
-    font-size: clamp(38px, 5.5vw, 64px);
-    letter-spacing: 0.18em;
-    color: var(--ink);
-    text-align: center;
-    line-height: 1.0;
-    text-transform: uppercase;
-    opacity: 0;
-    transform: translateY(8px) scale(0.96);
-    animation: wordmarkIn 0.7s cubic-bezier(.22,.9,.3,1) 1.4s forwards;
-  }
-  .loader-wordmark span { display: block; }
-  .loader-wordmark span:last-child { font-weight: 400; color: var(--teal); }
-
-  @keyframes brainBeat {
-    0%   { transform: scale(1);    opacity: 0.6; }
-    20%  { transform: scale(1.1);  opacity: 1;   }
-    40%  { transform: scale(1);    opacity: 0.7; }
-    60%  { transform: scale(1.08); opacity: 1;   }
-    100% { transform: scale(1);    opacity: 0.95;}
-  }
-  @keyframes wordmarkIn {
-    from { opacity: 0; transform: translateY(8px) scale(0.96); }
-    to   { opacity: 1; transform: translateY(0)   scale(1);    }
+  .loader-svg {
+    width: clamp(220px, 22vw, 320px);
+    height: auto;
+    display: block;
+    color: rgba(40, 50, 65, 0.22);
   }
   @keyframes loaderOut {
     0%   { opacity: 1; visibility: visible; }
     100% { opacity: 0; visibility: hidden;  }
   }
 
-  /* ---------- Page entry animations ---------- */
-  @keyframes slideDown  { from { transform: translateY(-110%); opacity: 0; } to { transform: none; opacity: 1; } }
-  @keyframes slideUp    { from { transform: translateY(60px);  opacity: 0; } to { transform: none; opacity: 1; } }
-  @keyframes slideLeft  { from { transform: translateX(-50px); opacity: 0; } to { transform: none; opacity: 1; } }
-  @keyframes slideRight { from { transform: translateX(50px);  opacity: 0; } to { transform: none; opacity: 1; } }
+  /* ---------- Page entry animations (slow, ~1.1s each) ---------- */
+  /* Opacity ramps to full inside the first ~15% so the slide reads as a fully
+     opaque element moving into place — preserves the page's static frost
+     transparency rather than dragging it through a long fade-in. */
+  /* slideDown uses `top` instead of transform so it does NOT create a
+     compositing layer — keeps backdrop-filter intact on .topbar-search,
+     .nav-copilot, and .nav-bell which sit inside the animating bars. */
+  @keyframes slideDown  {
+    0%   { top: -180px; }
+    100% { top: 0; }
+  }
+  @keyframes slideUp {
+    0%   { transform: translateY(60px); opacity: 0; }
+    15%  { opacity: 1; }
+    100% { transform: none; opacity: 1; }
+  }
+  @keyframes slideLeft {
+    0%   { transform: translateX(-50px); opacity: 0; }
+    15%  { opacity: 1; }
+    100% { transform: none; opacity: 1; }
+  }
+  @keyframes slideRight {
+    0%   { transform: translateX(50px); opacity: 0; }
+    15%  { opacity: 1; }
+    100% { transform: none; opacity: 1; }
+  }
 
-  .topbar           { animation: slideDown  0.55s cubic-bezier(.22,.9,.3,1) 2.30s both; }
-  .nav              { animation: slideDown  0.55s cubic-bezier(.22,.9,.3,1) 2.42s both; }
-  .welcome-row h1   { animation: slideLeft  0.55s cubic-bezier(.22,.9,.3,1) 2.62s both; }
-  .welcome-actions  { animation: slideRight 0.55s cubic-bezier(.22,.9,.3,1) 2.62s both; }
-  .stats            { animation: slideLeft  0.55s cubic-bezier(.22,.9,.3,1) 2.78s both; }
-  .col-left  > .card:nth-child(1) { animation: slideLeft  0.55s cubic-bezier(.22,.9,.3,1) 2.90s both; }
-  .col-left  > .card:nth-child(2) { animation: slideLeft  0.55s cubic-bezier(.22,.9,.3,1) 3.02s both; }
-  .col-right > .card:nth-child(1) { animation: slideRight 0.55s cubic-bezier(.22,.9,.3,1) 2.90s both; }
-  .col-right > .card:nth-child(2) { animation: slideRight 0.55s cubic-bezier(.22,.9,.3,1) 3.02s both; }
-  .bottom-row       { animation: slideUp    0.55s cubic-bezier(.22,.9,.3,1) 3.14s both; }
+  /* Animate INDIVIDUAL frost children, never their wrappers — a wrapper
+     animation creates a compositing layer that flattens backdrop-filter on
+     children, making cards look transparent instead of frosted. */
+  .topbar         { animation: slideDown  1.1s cubic-bezier(.22,.9,.3,1) 2.30s both; }
+  .nav            { animation: slideDown  1.1s cubic-bezier(.22,.9,.3,1) 2.42s both; }
+  .welcome-row h1 { animation: slideLeft  1.1s cubic-bezier(.22,.9,.3,1) 2.62s both; }
+
+  .welcome-actions > .btn:nth-child(1) { animation: slideRight 1.1s cubic-bezier(.22,.9,.3,1) 2.62s both; }
+  .welcome-actions > .btn:nth-child(2) { animation: slideRight 1.1s cubic-bezier(.22,.9,.3,1) 2.70s both; }
+  .welcome-actions > .btn:nth-child(3) { animation: slideRight 1.1s cubic-bezier(.22,.9,.3,1) 2.78s both; }
+
+  .stats > .stat:nth-child(1) { animation: slideLeft 1.1s cubic-bezier(.22,.9,.3,1) 2.86s both; }
+  .stats > .stat:nth-child(2) { animation: slideLeft 1.1s cubic-bezier(.22,.9,.3,1) 2.92s both; }
+  .stats > .stat:nth-child(3) { animation: slideLeft 1.1s cubic-bezier(.22,.9,.3,1) 2.98s both; }
+  .stats > .stat:nth-child(4) { animation: slideLeft 1.1s cubic-bezier(.22,.9,.3,1) 3.04s both; }
+  .stats > .stat:nth-child(5) { animation: slideLeft 1.1s cubic-bezier(.22,.9,.3,1) 3.10s both; }
+
+  .col-left  > .card:nth-child(1) { animation: slideLeft  1.1s cubic-bezier(.22,.9,.3,1) 3.18s both; }
+  .col-left  > .card:nth-child(2) { animation: slideLeft  1.1s cubic-bezier(.22,.9,.3,1) 3.30s both; }
+  .col-right > .card:nth-child(1) { animation: slideRight 1.1s cubic-bezier(.22,.9,.3,1) 3.18s both; }
+  .col-right > .card:nth-child(2) { animation: slideRight 1.1s cubic-bezier(.22,.9,.3,1) 3.30s both; }
+
+  .bottom-row > .chip:nth-child(1) { animation: slideUp 1.1s cubic-bezier(.22,.9,.3,1) 3.42s both; }
+  .bottom-row > .chip:nth-child(2) { animation: slideUp 1.1s cubic-bezier(.22,.9,.3,1) 3.48s both; }
+  .bottom-row > .chip:nth-child(3) { animation: slideUp 1.1s cubic-bezier(.22,.9,.3,1) 3.54s both; }
 
   @media (prefers-reduced-motion: reduce) {
     #loader { animation: loaderOut 0.3s ease 0.2s forwards; }
-    .loader-brain, .loader-wordmark { animation-duration: 0.3s; animation-delay: 0s; }
-    .topbar, .nav, .welcome-row h1, .welcome-actions, .stats,
-    .col-left > .card, .col-right > .card, .bottom-row {
+    .loader-svg * { animation: none !important; }
+    .topbar, .nav, .welcome-row h1,
+    .welcome-actions > .btn, .stats > .stat,
+    .col-left > .card, .col-right > .card,
+    .bottom-row > .chip {
       animation: none !important;
     }
   }
@@ -680,25 +670,78 @@
 </div>
 
 <div id="loader" aria-hidden="true">
-  <div class="loader-stage">
-    <svg class="loader-brain" viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M2 18 H8.5"/>
-      <path d="M6.5 16 L8.5 18 L6.5 20"/>
-      <path d="M27.5 18 H34"/>
-      <path d="M32 16 L34 18 L32 20"/>
-      <path d="M18 9 c-2.2 0-4 1.5-4.4 3.4 c-1.5 0.2-2.6 1.5-2.6 2.9 c0 0.8 0.4 1.6 1 2.1 c-0.6 0.5-1 1.3-1 2.1 c0 1.4 1.1 2.7 2.6 2.9 c0.4 1.9 2.2 3.2 4.4 3.2"/>
-      <path d="M18 9 c2.2 0 4 1.5 4.4 3.4 c1.5 0.2 2.6 1.5 2.6 2.9 c0 0.8-0.4 1.6-1 2.1 c0.6 0.5 1 1.3 1 2.1 c0 1.4-1.1 2.7-2.6 2.9 c-0.4 1.9-2.2 3.2-4.4 3.2"/>
-      <path d="M18 9 V25.5"/>
-      <path d="M14 13 c0.8 0.7 0.8 1.7 0 2.4"/>
-      <path d="M14 18 c0.8 0.7 0.8 1.7 0 2.4"/>
-      <path d="M22 13 c-0.8 0.7-0.8 1.7 0 2.4"/>
-      <path d="M22 18 c-0.8 0.7-0.8 1.7 0 2.4"/>
-    </svg>
-    <div class="loader-wordmark">
-      <span>CALYX</span>
-      <span>COMMAND</span>
-    </div>
-  </div>
+  <svg class="loader-svg" viewBox="0 0 1200 1200" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ll-title ll-desc">
+    <title id="ll-title">Calyx Command</title>
+    <desc id="ll-desc">Animated one-color line-art brain logo with organic pathways and subtle data flow.</desc>
+    <defs>
+      <style>
+        .ll-line  { fill: none; stroke: currentColor; stroke-width: 14; stroke-linecap: round; stroke-linejoin: round; }
+        .ll-thin  { fill: none; stroke: currentColor; stroke-width: 9;  stroke-linecap: round; stroke-linejoin: round; }
+        .ll-arrow { fill: none; stroke: currentColor; stroke-width: 14; stroke-linecap: round; stroke-linejoin: round; }
+        .ll-node  { fill: transparent; stroke: currentColor; stroke-width: 9; }
+        .ll-text-main { font-family: 'Bricolage Grotesque', "Avenir Next", "Helvetica Neue", Arial, sans-serif; font-weight: 300; letter-spacing: 42px; fill: currentColor; }
+        .ll-text-sub  { font-family: 'Bricolage Grotesque', "Avenir Next", "Helvetica Neue", Arial, sans-serif; font-weight: 300; letter-spacing: 30px; fill: currentColor; }
+        .ll-flow  { stroke-dasharray: 18 28; animation: llFlowDash  2.4s linear infinite; }
+        .ll-pulse { stroke-dasharray: 24 44; animation: llBrainDash 5.2s linear infinite; opacity: .9; }
+        .ll-dot   { fill: currentColor; opacity: .85; }
+        @keyframes llFlowDash  { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -92;  } }
+        @keyframes llBrainDash { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -136; } }
+        @keyframes llBreathe   { 0%,100% { transform: scale(1); } 50% { transform: scale(1.015); } }
+        #ll-brain-group { transform-origin: 600px 500px; animation: llBreathe 4.8s ease-in-out infinite; }
+      </style>
+      <marker id="ll-arrowhead" markerWidth="20" markerHeight="16" refX="17" refY="8" orient="auto" markerUnits="strokeWidth">
+        <path d="M 2 2 L 18 8 L 2 14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+      <path id="ll-flowTop"    d="M82 404 H214 C256 404 257 458 313 458 H408 C470 458 513 425 560 438 C606 470 603 527 560 559 C509 596 438 558 414 506 C391 453 333 461 281 469" />
+      <path id="ll-flowMiddle" d="M82 500 H242 C302 500 303 530 360 530 H470 C535 530 566 562 600 590 C634 562 665 530 730 530 H964 C1007 530 1021 500 1062 500 H1115" />
+      <path id="ll-flowBottom" d="M82 596 H212 C260 596 265 553 324 553 H390 C463 553 496 633 459 747 C489 805 561 846 600 812 C639 846 711 805 741 747 C704 633 737 553 810 553 H888 C947 553 942 596 988 596 H1115" />
+    </defs>
+
+    <g id="ll-logo-mark">
+      <path class="ll-line ll-flow" d="M82 404 H214 C256 404 257 458 313 458 H408"/>
+      <circle class="ll-node" cx="82" cy="404" r="16"/>
+      <path class="ll-line ll-flow" d="M82 500 H242 C302 500 303 530 360 530 H470"/>
+      <circle class="ll-node" cx="82" cy="500" r="16"/>
+      <path class="ll-line ll-flow" d="M82 596 H212 C260 596 265 553 324 553 H390"/>
+      <circle class="ll-node" cx="82" cy="596" r="16"/>
+
+      <g id="ll-brain-group">
+        <path class="ll-line" d="M590 182 C535 118 444 150 438 219 C370 200 315 243 322 313 C259 335 230 392 250 456 C210 503 218 585 274 617 C244 696 292 766 371 764 C390 834 469 862 522 812 C569 867 633 837 632 768 C633 701 612 668 606 629 C597 577 638 540 618 487 C598 436 626 373 611 327 C596 278 609 234 590 182 Z"/>
+        <path class="ll-line" d="M610 182 C665 118 756 150 762 219 C830 200 885 243 878 313 C941 335 970 392 950 456 C990 503 982 585 926 617 C956 696 908 766 829 764 C810 834 731 862 678 812 C631 867 567 837 568 768 C567 701 588 668 594 629 C603 577 562 540 582 487 C602 436 574 373 589 327 C604 278 591 234 610 182 Z"/>
+        <path class="ll-line" d="M600 185 C600 260 600 325 600 392"/>
+        <path class="ll-line" d="M600 812 C600 735 600 680 600 612"/>
+
+        <path class="ll-thin ll-pulse" d="M495 230 C438 232 424 295 476 319 C528 344 510 405 458 406 C405 407 377 365 332 391"/>
+        <path class="ll-thin ll-pulse" d="M541 284 C500 339 507 392 565 438 C606 470 603 527 560 559 C509 596 438 558 414 506 C391 453 333 461 281 469"/>
+        <path class="ll-thin ll-pulse" d="M520 425 C463 421 440 457 468 499 C497 542 464 580 418 567"/>
+        <path class="ll-thin ll-pulse" d="M385 308 C424 335 455 357 441 399"/>
+        <path class="ll-thin ll-pulse" d="M330 541 C379 535 405 583 372 620 C337 660 388 699 438 662"/>
+        <path class="ll-thin ll-pulse" d="M500 645 C454 660 430 706 459 747"/>
+        <path class="ll-thin ll-pulse" d="M375 704 C428 691 471 722 464 772"/>
+        <path class="ll-thin ll-pulse" d="M529 550 C568 584 557 631 516 659"/>
+
+        <path class="ll-thin ll-pulse" d="M705 230 C762 232 776 295 724 319 C672 344 690 405 742 406 C795 407 823 365 868 391"/>
+        <path class="ll-thin ll-pulse" d="M659 284 C700 339 693 392 635 438 C594 470 597 527 640 559 C691 596 762 558 786 506 C809 453 867 461 919 469"/>
+        <path class="ll-thin ll-pulse" d="M680 425 C737 421 760 457 732 499 C703 542 736 580 782 567"/>
+        <path class="ll-thin ll-pulse" d="M815 308 C776 335 745 357 759 399"/>
+        <path class="ll-thin ll-pulse" d="M870 541 C821 535 795 583 828 620 C863 660 812 699 762 662"/>
+        <path class="ll-thin ll-pulse" d="M700 645 C746 660 770 706 741 747"/>
+        <path class="ll-thin ll-pulse" d="M825 704 C772 691 729 722 736 772"/>
+        <path class="ll-thin ll-pulse" d="M671 550 C632 584 643 631 684 659"/>
+      </g>
+
+      <g id="ll-particles">
+        <circle class="ll-dot" r="7"><animateMotion dur="3.6s"               repeatCount="indefinite" rotate="auto"><mpath href="#ll-flowTop"/></animateMotion></circle>
+        <circle class="ll-dot" r="7"><animateMotion dur="3.1s" begin=".45s"  repeatCount="indefinite" rotate="auto"><mpath href="#ll-flowMiddle"/></animateMotion></circle>
+        <circle class="ll-dot" r="7"><animateMotion dur="4.1s" begin=".9s"   repeatCount="indefinite" rotate="auto"><mpath href="#ll-flowBottom"/></animateMotion></circle>
+      </g>
+    </g>
+
+    <g id="ll-wordmark">
+      <text class="ll-text-main" x="600" y="906"  font-size="94" text-anchor="middle">CALYX</text>
+      <text class="ll-text-sub"  x="600" y="1008" font-size="72" text-anchor="middle">COMMAND</text>
+    </g>
+  </svg>
 </div>
 
 <div id="root"></div>
@@ -876,20 +919,53 @@ const BugLine    = ({ s = 13 }) => <Icon size={s}><rect x="6" y="7" width="12" h
 const TruckTiny  = ({ s = 11 }) => <Icon size={s}><path d="M2 7h10v9H4z"/><path d="M12 10h4l4 4v2h-3"/><circle cx="7" cy="17" r="1.5"/><circle cx="17" cy="17" r="1.5"/></Icon>;
 const BellTiny   = ({ s = 11 }) => <Icon size={s}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></Icon>;
 
-const BrainLogo = ({ s = 24 }) => (
-  <svg width={s} height={s} viewBox="0 0 36 36" fill="none" stroke="currentColor"
-       strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M2 18 H8.5"/>
-    <path d="M6.5 16 L8.5 18 L6.5 20"/>
-    <path d="M27.5 18 H34"/>
-    <path d="M32 16 L34 18 L32 20"/>
-    <path d="M18 9 c-2.2 0-4 1.5-4.4 3.4 c-1.5 0.2-2.6 1.5-2.6 2.9 c0 0.8 0.4 1.6 1 2.1 c-0.6 0.5-1 1.3-1 2.1 c0 1.4 1.1 2.7 2.6 2.9 c0.4 1.9 2.2 3.2 4.4 3.2"/>
-    <path d="M18 9 c2.2 0 4 1.5 4.4 3.4 c1.5 0.2 2.6 1.5 2.6 2.9 c0 0.8-0.4 1.6-1 2.1 c0.6 0.5 1 1.3 1 2.1 c0 1.4-1.1 2.7-2.6 2.9 c-0.4 1.9-2.2 3.2-4.4 3.2"/>
-    <path d="M18 9 V25.5"/>
-    <path d="M14 13 c0.8 0.7 0.8 1.7 0 2.4"/>
-    <path d="M14 18 c0.8 0.7 0.8 1.7 0 2.4"/>
-    <path d="M22 13 c-0.8 0.7-0.8 1.7 0 2.4"/>
-    <path d="M22 18 c-0.8 0.7-0.8 1.7 0 2.4"/>
+const NavLogo = ({ s = 44 }) => (
+  <svg width={s} height={s} viewBox="0 0 1200 1200" fill="none" stroke="currentColor"
+       strokeLinecap="round" strokeLinejoin="round" aria-label="Calyx Command">
+    {/* Input/output flow lines */}
+    <g strokeWidth="14">
+      <path d="M82 404 H214 C256 404 257 458 313 458 H408"/>
+      <path d="M82 500 H242 C302 500 303 530 360 530 H470"/>
+      <path d="M82 596 H212 C260 596 265 553 324 553 H390"/>
+      <path d="M792 458 H888 C943 458 935 404 986 404 H1115"/>
+      <path d="M730 530 H964 C1007 530 1021 500 1062 500 H1115"/>
+      <path d="M810 553 H888 C947 553 942 596 988 596 H1115"/>
+    </g>
+    {/* Input nodes */}
+    <g strokeWidth="9">
+      <circle cx="82" cy="404" r="16"/>
+      <circle cx="82" cy="500" r="16"/>
+      <circle cx="82" cy="596" r="16"/>
+    </g>
+    {/* Brain outline */}
+    <g strokeWidth="14">
+      <path d="M590 182 C535 118 444 150 438 219 C370 200 315 243 322 313 C259 335 230 392 250 456 C210 503 218 585 274 617 C244 696 292 766 371 764 C390 834 469 862 522 812 C569 867 633 837 632 768 C633 701 612 668 606 629 C597 577 638 540 618 487 C598 436 626 373 611 327 C596 278 609 234 590 182 Z"/>
+      <path d="M610 182 C665 118 756 150 762 219 C830 200 885 243 878 313 C941 335 970 392 950 456 C990 503 982 585 926 617 C956 696 908 766 829 764 C810 834 731 862 678 812 C631 867 567 837 568 768 C567 701 588 668 594 629 C603 577 562 540 582 487 C602 436 574 373 589 327 C604 278 591 234 610 182 Z"/>
+      <path d="M600 185 C600 260 600 325 600 392"/>
+      <path d="M600 812 C600 735 600 680 600 612"/>
+    </g>
+    {/* Inner gyri */}
+    <g strokeWidth="9">
+      <path d="M495 230 C438 232 424 295 476 319 C528 344 510 405 458 406 C405 407 377 365 332 391"/>
+      <path d="M541 284 C500 339 507 392 565 438 C606 470 603 527 560 559 C509 596 438 558 414 506 C391 453 333 461 281 469"/>
+      <path d="M520 425 C463 421 440 457 468 499 C497 542 464 580 418 567"/>
+      <path d="M385 308 C424 335 455 357 441 399"/>
+      <path d="M330 541 C379 535 405 583 372 620 C337 660 388 699 438 662"/>
+      <path d="M500 645 C454 660 430 706 459 747"/>
+      <path d="M375 704 C428 691 471 722 464 772"/>
+      <path d="M529 550 C568 584 557 631 516 659"/>
+      <path d="M705 230 C762 232 776 295 724 319 C672 344 690 405 742 406 C795 407 823 365 868 391"/>
+      <path d="M659 284 C700 339 693 392 635 438 C594 470 597 527 640 559 C691 596 762 558 786 506 C809 453 867 461 919 469"/>
+      <path d="M680 425 C737 421 760 457 732 499 C703 542 736 580 782 567"/>
+      <path d="M815 308 C776 335 745 357 759 399"/>
+      <path d="M870 541 C821 535 795 583 828 620 C863 660 812 699 762 662"/>
+      <path d="M700 645 C746 660 770 706 741 747"/>
+      <path d="M825 704 C772 691 729 722 736 772"/>
+      <path d="M671 550 C632 584 643 631 684 659"/>
+    </g>
+    {/* Wordmark */}
+    <text x="600" y="906" fontSize="94" fontWeight="300" letterSpacing="42" textAnchor="middle" fill="currentColor" stroke="none" fontFamily="'Bricolage Grotesque', 'Avenir Next', 'Helvetica Neue', sans-serif">CALYX</text>
+    <text x="600" y="1008" fontSize="72" fontWeight="300" letterSpacing="30" textAnchor="middle" fill="currentColor" stroke="none" fontFamily="'Bricolage Grotesque', 'Avenir Next', 'Helvetica Neue', sans-serif">COMMAND</text>
   </svg>
 );
 
@@ -930,8 +1006,7 @@ function NavBar() {
   return (
     <nav className="nav">
       <span className="nav-logo" title="Calyx Command">
-        <BrainLogo s={26} />
-        <span className="brand">CALYX<br/>COMMAND</span>
+        <NavLogo s={44} />
       </span>
       <div className="nav-items">
         {items.map(it => (
