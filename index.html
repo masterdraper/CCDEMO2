@@ -10,6 +10,25 @@
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three":          "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/":  "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+  import * as THREE       from 'three';
+  import { GLTFLoader }   from 'three/addons/loaders/GLTFLoader.js';
+  import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+  import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+  window.THREE = THREE;
+  window.GLTFLoader = GLTFLoader;
+  window.OrbitControls = OrbitControls;
+  window.RoomEnvironment = RoomEnvironment;
+  window.dispatchEvent(new Event('three-ready'));
+</script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -23,6 +42,9 @@
     --teal:         #0d4f5e;
     --teal-soft:    rgba(13, 79, 94, 0.55);
     --teal-tint:    rgba(13, 79, 94, 0.10);
+    --ks-stroke:      rgba(40, 50, 65, 0.13);
+    --ks-stroke-mid:  rgba(13, 79, 94, 0.16);
+    --ks-stroke-bold: rgba(40, 50, 65, 0.18);
     --frost:        rgba(255, 255, 255, 0.42);
     --frost-strong: rgba(255, 255, 255, 0.62);
     --frost-deep:   rgba(245, 247, 250, 0.30);
@@ -31,6 +53,76 @@
     --display: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
     --body:    'Archivo Narrow', ui-sans-serif, system-ui, sans-serif;
   }
+
+  /* Per-page color tinting — accent + kaleidoscope strokes shift slightly,
+     everything else stays the same. The canvas reads --ks-* on each frame,
+     and elements using var(--teal) inherit the new value automatically. */
+  body[data-page="3D Preview"] {
+    --teal:           #16774a;
+    --teal-soft:      rgba(22, 119, 74, 0.55);
+    --teal-tint:      rgba(22, 119, 74, 0.10);
+    --ks-stroke:      rgba(38, 60, 46, 0.14);
+    --ks-stroke-mid:  rgba(22, 119, 74, 0.18);
+    --ks-stroke-bold: rgba(38, 60, 46, 0.20);
+    --bg:             #e7ece8;
+  }
+  body[data-page="Artwork Intelligence Hub"] {
+    --teal:           #b65426;
+    --teal-soft:      rgba(182, 84, 38, 0.55);
+    --teal-tint:      rgba(182, 84, 38, 0.10);
+    --ks-stroke:      rgba(60, 48, 40, 0.14);
+    --ks-stroke-mid:  rgba(182, 84, 38, 0.18);
+    --ks-stroke-bold: rgba(60, 48, 40, 0.20);
+    --bg:             #ece8e6;
+  }
+  body[data-page="Orders"] {
+    --teal:           #a8801a;
+    --teal-soft:      rgba(168, 128, 26, 0.55);
+    --teal-tint:      rgba(168, 128, 26, 0.10);
+    --ks-stroke:      rgba(60, 54, 32, 0.14);
+    --ks-stroke-mid:  rgba(168, 128, 26, 0.18);
+    --ks-stroke-bold: rgba(60, 54, 32, 0.20);
+    --bg:             #ebe9df;
+  }
+  body[data-page="Products"] {
+    --teal:           #c4754f;
+    --teal-soft:      rgba(196, 117, 79, 0.55);
+    --teal-tint:      rgba(196, 117, 79, 0.10);
+    --ks-stroke:      rgba(64, 50, 44, 0.14);
+    --ks-stroke-mid:  rgba(196, 117, 79, 0.18);
+    --ks-stroke-bold: rgba(64, 50, 44, 0.20);
+    --bg:             #ede4df;
+  }
+  body[data-page="Request Quote"] {
+    --teal:           #5b48a8;
+    --teal-soft:      rgba(91, 72, 168, 0.55);
+    --teal-tint:      rgba(91, 72, 168, 0.10);
+    --ks-stroke:      rgba(48, 44, 62, 0.14);
+    --ks-stroke-mid:  rgba(91, 72, 168, 0.18);
+    --ks-stroke-bold: rgba(48, 44, 62, 0.20);
+    --bg:             #e8e7ee;
+  }
+  body[data-page="Approvals"] {
+    --teal:           #963d44;
+    --teal-soft:      rgba(150, 61, 68, 0.55);
+    --teal-tint:      rgba(150, 61, 68, 0.10);
+    --ks-stroke:      rgba(62, 44, 46, 0.14);
+    --ks-stroke-mid:  rgba(150, 61, 68, 0.18);
+    --ks-stroke-bold: rgba(62, 44, 46, 0.20);
+    --bg:             #ece4e5;
+  }
+  body[data-page="Account"] {
+    --teal:           #3da899;
+    --teal-soft:      rgba(61, 168, 153, 0.55);
+    --teal-tint:      rgba(61, 168, 153, 0.10);
+    --ks-stroke:      rgba(40, 58, 54, 0.14);
+    --ks-stroke-mid:  rgba(61, 168, 153, 0.18);
+    --ks-stroke-bold: rgba(40, 58, 54, 0.20);
+    --bg:             #e6edea;
+  }
+  /* Smooth page-bg transition; component-level transitions on color/border
+     pick up the var changes naturally. */
+  html { transition: background-color 0.55s ease; }
 
   html, body, #root {
     color: var(--ink);
@@ -538,6 +630,162 @@
   .chip:hover { border-color: var(--teal); color: var(--teal); }
   .chip.dashed { border-style: dashed; color: var(--ink-soft); }
 
+  /* ---------- 3D Preview page ---------- */
+  .threed-page {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .threed-hero {
+    position: relative;
+    width: 100%;
+    height: clamp(420px, 62vh, 640px);
+    overflow: visible;            /* let model + shadow extend beyond if needed */
+    background: transparent;       /* kaleidoscope shows through */
+    animation: threedHeroIn 0.7s cubic-bezier(.22,.9,.3,1) both;
+  }
+  @keyframes threedHeroIn {
+    from { opacity: 0; transform: scale(0.985); }
+    to   { opacity: 1; transform: none;          }
+  }
+  .threed-canvas {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    display: block;
+    pointer-events: none; /* model spins on its own — scroll passes through */
+  }
+  .threed-canvas canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    outline: none;
+    pointer-events: none;
+  }
+  .threed-status {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: var(--ink-soft);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    pointer-events: none;
+  }
+  .threed-status .err {
+    color: var(--ink);
+    max-width: 420px;
+    text-align: center;
+    margin-top: 8px;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: none;
+  }
+  .threed-tag {
+    position: absolute;
+    top: 18px; left: 22px;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border: 1px solid var(--hairline);
+    border-radius: 999px;
+    background: var(--frost-strong);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--ink);
+    pointer-events: none;
+  }
+  .threed-tag .dot {
+    width: 6px; height: 6px;
+    border-radius: 999px;
+    background: var(--teal);
+    border-color: var(--teal);
+  }
+
+  .threed-thumbs {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .threed-thumb {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    border-radius: 14px;
+    border: 1px solid var(--hairline);
+    background: var(--frost);
+    backdrop-filter: blur(12px) saturate(125%);
+    -webkit-backdrop-filter: blur(12px) saturate(125%);
+    display: flex;
+    flex-direction: column;
+    padding: 14px;
+    cursor: pointer;
+    transition: border-color .15s, transform .15s, color .4s ease;
+    overflow: hidden;
+    animation: threedThumbIn 0.75s cubic-bezier(.22,.9,.3,1) both;
+  }
+  @keyframes threedThumbIn {
+    0%   { transform: translateY(70px); opacity: 0; }
+    18%  { opacity: 1; }
+    100% { transform: none; opacity: 1; }
+  }
+  .threed-thumb:nth-child(1) { animation-delay: 0.18s; }
+  .threed-thumb:nth-child(2) { animation-delay: 0.28s; }
+  .threed-thumb:nth-child(3) { animation-delay: 0.38s; }
+  .threed-thumb:nth-child(4) { animation-delay: 0.48s; }
+  .threed-thumb::after {
+    content: "";
+    position: absolute; inset: 3px;
+    border: 1px solid rgba(10,10,10,0.05);
+    border-radius: 11px;
+    pointer-events: none;
+  }
+  .threed-thumb:hover {
+    border-color: var(--teal);
+    transform: translateY(-2px);
+  }
+  .threed-thumb.active { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+  .threed-thumb-art {
+    flex: 1 1 auto;
+    border: 1px dashed var(--hairline-soft);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-faint);
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    margin-bottom: 10px;
+  }
+  .threed-thumb-meta {
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .threed-thumb-name {
+    font-family: var(--display);
+    font-size: 13.5px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .threed-thumb-sub {
+    font-size: 10.5px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+  }
+
+  @media (max-width: 900px) {
+    .threed-thumbs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 480px) {
+    .threed-thumbs { grid-template-columns: 1fr; }
+  }
+
   /* ---------- Loading screen ---------- */
   /* Animated brain logo, sized small in the center, tinted to match the
      kaleidoscope strokes so it reads as part of the pattern. */
@@ -556,7 +804,7 @@
     width: clamp(220px, 22vw, 320px);
     height: auto;
     display: block;
-    color: rgba(40, 50, 65, 0.22);
+    color: rgba(40, 50, 65, 0.42);
   }
   @keyframes loaderOut {
     0%   { opacity: 1; visibility: visible; }
@@ -593,28 +841,35 @@
   /* Animate INDIVIDUAL frost children, never their wrappers — a wrapper
      animation creates a compositing layer that flattens backdrop-filter on
      children, making cards look transparent instead of frosted. */
-  .topbar         { animation: slideDown  1.1s cubic-bezier(.22,.9,.3,1) 2.30s both; }
-  .nav            { animation: slideDown  1.1s cubic-bezier(.22,.9,.3,1) 2.42s both; }
-  .welcome-row h1 { animation: slideLeft  1.1s cubic-bezier(.22,.9,.3,1) 2.62s both; }
+  /* TopBar and NavBar mount once at app start, so their entry stays
+     loader-tied (waits for the loader to fade). */
+  .topbar         { animation: slideDown 1.1s cubic-bezier(.22,.9,.3,1) 2.30s both; }
+  .nav            { animation: slideDown 1.1s cubic-bezier(.22,.9,.3,1) 2.42s both; }
 
-  .welcome-actions > .btn:nth-child(1) { animation: slideRight 1.1s cubic-bezier(.22,.9,.3,1) 2.62s both; }
-  .welcome-actions > .btn:nth-child(2) { animation: slideRight 1.1s cubic-bezier(.22,.9,.3,1) 2.70s both; }
-  .welcome-actions > .btn:nth-child(3) { animation: slideRight 1.1s cubic-bezier(.22,.9,.3,1) 2.78s both; }
+  /* Page contents (Dashboard + 3D Preview) mount fresh on every navigation,
+     so their delays are *relative to mount* — first element fires immediately,
+     subsequent elements stagger. App gates content mount until the loader
+     finishes on first load, so the cascade still lines up there. */
+  .welcome-row h1 { animation: slideLeft 1.1s cubic-bezier(.22,.9,.3,1) 0s both; }
 
-  .stats > .stat:nth-child(1) { animation: slideLeft 1.1s cubic-bezier(.22,.9,.3,1) 2.86s both; }
-  .stats > .stat:nth-child(2) { animation: slideLeft 1.1s cubic-bezier(.22,.9,.3,1) 2.92s both; }
-  .stats > .stat:nth-child(3) { animation: slideLeft 1.1s cubic-bezier(.22,.9,.3,1) 2.98s both; }
-  .stats > .stat:nth-child(4) { animation: slideLeft 1.1s cubic-bezier(.22,.9,.3,1) 3.04s both; }
-  .stats > .stat:nth-child(5) { animation: slideLeft 1.1s cubic-bezier(.22,.9,.3,1) 3.10s both; }
+  .welcome-actions > .btn:nth-child(1) { animation: slideRight 1.1s cubic-bezier(.22,.9,.3,1) 0s    both; }
+  .welcome-actions > .btn:nth-child(2) { animation: slideRight 1.1s cubic-bezier(.22,.9,.3,1) 0.08s both; }
+  .welcome-actions > .btn:nth-child(3) { animation: slideRight 1.1s cubic-bezier(.22,.9,.3,1) 0.16s both; }
 
-  .col-left  > .card:nth-child(1) { animation: slideLeft  1.1s cubic-bezier(.22,.9,.3,1) 3.18s both; }
-  .col-left  > .card:nth-child(2) { animation: slideLeft  1.1s cubic-bezier(.22,.9,.3,1) 3.30s both; }
-  .col-right > .card:nth-child(1) { animation: slideRight 1.1s cubic-bezier(.22,.9,.3,1) 3.18s both; }
-  .col-right > .card:nth-child(2) { animation: slideRight 1.1s cubic-bezier(.22,.9,.3,1) 3.30s both; }
+  .stats > .stat:nth-child(1) { animation: slideLeft 1.1s cubic-bezier(.22,.9,.3,1) 0.24s both; }
+  .stats > .stat:nth-child(2) { animation: slideLeft 1.1s cubic-bezier(.22,.9,.3,1) 0.30s both; }
+  .stats > .stat:nth-child(3) { animation: slideLeft 1.1s cubic-bezier(.22,.9,.3,1) 0.36s both; }
+  .stats > .stat:nth-child(4) { animation: slideLeft 1.1s cubic-bezier(.22,.9,.3,1) 0.42s both; }
+  .stats > .stat:nth-child(5) { animation: slideLeft 1.1s cubic-bezier(.22,.9,.3,1) 0.48s both; }
 
-  .bottom-row > .chip:nth-child(1) { animation: slideUp 1.1s cubic-bezier(.22,.9,.3,1) 3.42s both; }
-  .bottom-row > .chip:nth-child(2) { animation: slideUp 1.1s cubic-bezier(.22,.9,.3,1) 3.48s both; }
-  .bottom-row > .chip:nth-child(3) { animation: slideUp 1.1s cubic-bezier(.22,.9,.3,1) 3.54s both; }
+  .col-left  > .card:nth-child(1) { animation: slideLeft  1.1s cubic-bezier(.22,.9,.3,1) 0.56s both; }
+  .col-left  > .card:nth-child(2) { animation: slideLeft  1.1s cubic-bezier(.22,.9,.3,1) 0.68s both; }
+  .col-right > .card:nth-child(1) { animation: slideRight 1.1s cubic-bezier(.22,.9,.3,1) 0.56s both; }
+  .col-right > .card:nth-child(2) { animation: slideRight 1.1s cubic-bezier(.22,.9,.3,1) 0.68s both; }
+
+  .bottom-row > .chip:nth-child(1) { animation: slideUp 1.1s cubic-bezier(.22,.9,.3,1) 0.80s both; }
+  .bottom-row > .chip:nth-child(2) { animation: slideUp 1.1s cubic-bezier(.22,.9,.3,1) 0.86s both; }
+  .bottom-row > .chip:nth-child(3) { animation: slideUp 1.1s cubic-bezier(.22,.9,.3,1) 0.92s both; }
 
   @media (prefers-reduced-motion: reduce) {
     #loader { animation: loaderOut 0.3s ease 0.2s forwards; }
@@ -757,11 +1012,6 @@
         <circle class="ll-dot" r="7"><animateMotion dur="4.1s" begin=".9s"   repeatCount="indefinite" rotate="auto"><mpath href="#ll-flowBottom"/></animateMotion></circle>
       </g>
     </g>
-
-    <g id="ll-wordmark">
-      <text class="ll-text-main" x="600" y="906"  font-size="94" text-anchor="middle">CALYX</text>
-      <text class="ll-text-sub"  x="600" y="1008" font-size="72" text-anchor="middle">COMMAND</text>
-    </g>
   </svg>
 </div>
 
@@ -775,10 +1025,22 @@
   let dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
   let w = 0, h = 0;
 
-  // Dimmer than before — barely-there strokes
-  const stroke      = 'rgba(40, 50, 65, 0.13)';
-  const strokeMid   = 'rgba(13, 79, 94, 0.16)';
-  const strokeBold  = 'rgba(40, 50, 65, 0.18)';
+  // Stroke colors come from CSS custom props on <body> so they shift with
+  // the active page (Dashboard → cool, 3D Preview → green, Artwork → orange).
+  // Cached and re-read whenever data-page changes (cheaper than per-frame).
+  let stroke     = 'rgba(40, 50, 65, 0.13)';
+  let strokeMid  = 'rgba(13, 79, 94, 0.16)';
+  let strokeBold = 'rgba(40, 50, 65, 0.18)';
+
+  function refreshColors() {
+    const cs = getComputedStyle(document.body);
+    stroke     = cs.getPropertyValue('--ks-stroke').trim()      || stroke;
+    strokeMid  = cs.getPropertyValue('--ks-stroke-mid').trim()  || strokeMid;
+    strokeBold = cs.getPropertyValue('--ks-stroke-bold').trim() || strokeBold;
+  }
+  refreshColors();
+  new MutationObserver(refreshColors)
+    .observe(document.body, { attributes: true, attributeFilter: ['data-page'] });
 
   function resize() {
     w = window.innerWidth;
@@ -1012,8 +1274,7 @@ function TopBar() {
 }
 
 /* ---------- Nav ---------- */
-function NavBar() {
-  const [active, setActive] = useState("Dashboard");
+function NavBar({ active, setActive }) {
   const containerRef = useRef(null);
   const itemRefs = useRef({});
   const [pill, setPill] = useState({ left: 0, top: 0, width: 0, height: 0, ready: false });
@@ -1251,26 +1512,278 @@ function BottomChips() {
   );
 }
 
+/* ---------- 3D Preview page ---------- */
+function ThreeViewer({ modelUrl }) {
+  const containerRef = useRef(null);
+  const [status, setStatus] = useState("init"); // init | loading | ready | error
+  const [errMsg, setErrMsg] = useState("");
+
+  React.useEffect(() => {
+    let cancelled = false;
+    let cleanup = null;
+
+    const start = () => {
+      if (cancelled) return;
+      const T = window.THREE;
+      const Loader = window.GLTFLoader;
+      const RoomEnv = window.RoomEnvironment;
+      const container = containerRef.current;
+      if (!T || !Loader || !container) {
+        setTimeout(start, 80);
+        return;
+      }
+
+      setStatus("loading");
+
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+
+      const scene = new T.Scene();
+      scene.background = null;
+
+      const camera = new T.PerspectiveCamera(38, w / h, 0.1, 100);
+      camera.position.set(2.4, 1.6, 3.4);
+
+      const renderer = new T.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(w, h);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = T.PCFSoftShadowMap;
+      renderer.outputColorSpace = T.SRGBColorSpace;
+      renderer.toneMapping = T.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.0;
+      container.appendChild(renderer.domElement);
+
+      // Soft env reflection so PBR materials look right
+      if (RoomEnv) {
+        const pmrem = new T.PMREMGenerator(renderer);
+        scene.environment = pmrem.fromScene(new RoomEnv(), 0.04).texture;
+      }
+
+      // Lights
+      scene.add(new T.AmbientLight(0xffffff, 0.55));
+      const key = new T.DirectionalLight(0xffffff, 1.6);
+      key.position.set(3.5, 5.5, 3.2);
+      key.castShadow = true;
+      key.shadow.mapSize.set(2048, 2048);
+      key.shadow.camera.near = 0.1;
+      key.shadow.camera.far = 16;
+      key.shadow.camera.left = -3.5;
+      key.shadow.camera.right = 3.5;
+      key.shadow.camera.top = 3.5;
+      key.shadow.camera.bottom = -3.5;
+      key.shadow.bias = -0.0008;
+      key.shadow.radius = 4;
+      scene.add(key);
+      const fill = new T.DirectionalLight(0xeaf2f7, 0.45);
+      fill.position.set(-4, 2, -2);
+      scene.add(fill);
+
+      // Shadow plane (transparent — only catches the model's shadow)
+      const shadowPlane = new T.Mesh(
+        new T.PlaneGeometry(20, 20),
+        new T.ShadowMaterial({ opacity: 0.18 })
+      );
+      shadowPlane.rotation.x = -Math.PI / 2;
+      shadowPlane.receiveShadow = true;
+      scene.add(shadowPlane);
+
+      // Non-interactive: model spins on its own so the page can scroll
+      // freely without the canvas grabbing wheel/drag events.
+      let model = null;
+
+      // Load model
+      const loader = new Loader();
+      loader.load(
+        modelUrl,
+        (gltf) => {
+          if (cancelled) return;
+          model = gltf.scene;
+          model.traverse((c) => {
+            if (c.isMesh) {
+              c.castShadow = true;
+              c.receiveShadow = true;
+              if (c.material && c.material.map) {
+                c.material.map.colorSpace = T.SRGBColorSpace;
+              }
+            }
+          });
+
+          // Center + scale so the longest dim ≈ 2.5 units
+          const box = new T.Box3().setFromObject(model);
+          const size = box.getSize(new T.Vector3());
+          const center = box.getCenter(new T.Vector3());
+          const maxDim = Math.max(size.x, size.y, size.z) || 1;
+          const scale = 2.5 / maxDim;
+          model.scale.setScalar(scale);
+
+          const box2 = new T.Box3().setFromObject(model);
+          const center2 = box2.getCenter(new T.Vector3());
+          model.position.x -= center2.x;
+          model.position.z -= center2.z;
+          model.position.y -= box2.min.y; // sit on ground
+
+          shadowPlane.position.y = 0.0005;
+
+          // Frame the camera based on the new bounding box
+          const finalBox = new T.Box3().setFromObject(model);
+          const finalSize = finalBox.getSize(new T.Vector3());
+          const finalCenter = finalBox.getCenter(new T.Vector3());
+          const radius = finalSize.length() * 0.55;
+          const dist = radius / Math.tan((camera.fov * Math.PI) / 360);
+          camera.position.set(dist * 0.85, dist * 0.55, dist * 0.95);
+          camera.lookAt(finalCenter);
+
+          scene.add(model);
+          setStatus("ready");
+        },
+        undefined,
+        (err) => {
+          if (cancelled) return;
+          console.error("GLB load failed", err);
+          setErrMsg(
+            "Couldn't load the model. The page must be served over http(s) — open the local server URL or the Vercel deployment."
+          );
+          setStatus("error");
+        }
+      );
+
+      // Animate — slow Y-axis spin, no user interaction
+      let frameId;
+      const animate = () => {
+        if (model) model.rotation.y += 0.005;
+        renderer.render(scene, camera);
+        frameId = requestAnimationFrame(animate);
+      };
+      animate();
+
+      // Resize
+      const onResize = () => {
+        const w = container.clientWidth;
+        const h = container.clientHeight;
+        if (w === 0 || h === 0) return;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      };
+      window.addEventListener("resize", onResize);
+
+      cleanup = () => {
+        cancelAnimationFrame(frameId);
+        window.removeEventListener("resize", onResize);
+        renderer.dispose();
+        if (renderer.domElement.parentNode) {
+          renderer.domElement.parentNode.removeChild(renderer.domElement);
+        }
+        scene.traverse((o) => {
+          if (o.geometry) o.geometry.dispose();
+          if (o.material) {
+            const m = o.material;
+            (Array.isArray(m) ? m : [m]).forEach((mm) => mm && mm.dispose && mm.dispose());
+          }
+        });
+      };
+    };
+
+    start();
+    return () => {
+      cancelled = true;
+      if (cleanup) cleanup();
+    };
+  }, [modelUrl]);
+
+  return (
+    <div ref={containerRef} className="threed-canvas">
+      {status === "loading" && <div className="threed-status">Loading model…</div>}
+      {status === "init"    && <div className="threed-status">Booting 3D viewer…</div>}
+      {status === "error"   && (
+        <div className="threed-status">
+          Model unavailable
+          <div className="err">{errMsg}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ThreeDPage() {
+  const [activeModel, setActiveModel] = useState(0);
+  const models = [
+    { name: "Calyx Pouch",     sub: "Stand-up · 3.5 oz", url: "./assets/calyx-pouch.glb" },
+    { name: "Mylar Bag",       sub: "Flat · 1 oz",       url: null },
+    { name: "Tin · Round",     sub: "Hinged · 28 g",     url: null },
+    { name: "Glass Jar",       sub: "Childproof · 7 g",  url: null },
+  ];
+  const current = models[activeModel];
+
+  return (
+    <div className="threed-page">
+      <div className="threed-hero">
+        <span className="threed-tag"><span className="dot"/> Live Preview</span>
+        <ThreeViewer modelUrl={current.url || models[0].url} />
+      </div>
+      <div className="threed-thumbs">
+        {models.map((m, i) => (
+          <div key={m.name}
+               className={`threed-thumb ${i === activeModel ? "active" : ""}`}
+               onClick={() => setActiveModel(i)}>
+            <div className="threed-thumb-art">Snapshot</div>
+            <div className="threed-thumb-meta">
+              <span className="threed-thumb-name">{m.name}</span>
+              <span className="threed-thumb-sub">{m.sub}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Dashboard page ---------- */
+function DashboardPage() {
+  return (
+    <>
+      <WelcomeRow />
+      <StatsRow />
+      <div className="columns">
+        <div className="col-left">
+          <NeedsAttention />
+          <ActiveOrders />
+        </div>
+        <div className="col-right">
+          <CalendarCard />
+          <Quotes />
+        </div>
+      </div>
+      <BottomChips />
+    </>
+  );
+}
+
 /* ---------- App ---------- */
 function App() {
+  const [page, setPage] = useState("Dashboard");
+  // Hold off mounting page contents until the loader has had time to fade,
+  // so the dashboard's entry cascade lines up on first load. After that,
+  // every navigation remounts the page component and its CSS animations
+  // re-fire from mount time — no loader-sized waiting period.
+  const [contentReady, setContentReady] = useState(false);
+
+  React.useEffect(() => {
+    document.body.dataset.page = page;
+  }, [page]);
+
+  React.useEffect(() => {
+    const t = setTimeout(() => setContentReady(true), 2620);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
     <>
       <TopBar />
-      <NavBar />
+      <NavBar active={page} setActive={setPage} />
       <main className="main">
-        <WelcomeRow />
-        <StatsRow />
-        <div className="columns">
-          <div className="col-left">
-            <NeedsAttention />
-            <ActiveOrders />
-          </div>
-          <div className="col-right">
-            <CalendarCard />
-            <Quotes />
-          </div>
-        </div>
-        <BottomChips />
+        {contentReady && (page === "3D Preview" ? <ThreeDPage /> : <DashboardPage />)}
       </main>
     </>
   );
